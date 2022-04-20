@@ -38,4 +38,14 @@ export class DataController {
         const matchedRooms = this.db.collection("/matchedRooms");
         return matchedRooms.doc(id).set(data);
     }
+
+    async getRoom(roomId: string) {
+        const room = await this.db.collection("/matchedRooms").doc(roomId).get();
+        if (!room) return null;
+        return room.data();
+    }
+
+    async updateRoom(roomId: string, data: any) {
+        return await this.db.collection("/matchedRooms").doc(roomId).set(data);
+    }
 }

@@ -48,6 +48,7 @@ router.get("/room", async (req, res) => {
   const queueRooms = await dataController.getQueueRooms();
   // 未マッチのルームがない場合はルーム作成・ある場合はルームに接続
   if (queueRooms.length === 0) {
+    // TODO: 答えを決める
     const roomId = uuidv4();
     const roomData = {
       room: {
@@ -60,7 +61,9 @@ router.get("/room", async (req, res) => {
           uuid: userId,
           rate: user?.rate,
         }
-      ]
+      ],
+      history: [],
+      turnPlayerUuid: userId,
     }
     // ルームを作成
     await dataController.createRoom(roomId, roomData);
@@ -68,6 +71,7 @@ router.get("/room", async (req, res) => {
   } else {
     const room = queueRooms[0];
     const newRoomData = {
+      ...room,
       room: {
         ...room.room,
         status: "matched",
@@ -79,6 +83,9 @@ router.get("/room", async (req, res) => {
           uuid: userId,
           rate: user?.rate,
         }
+      ],
+      history: [
+        ...room.history
       ]
     }
     
@@ -91,49 +98,61 @@ router.get("/room", async (req, res) => {
 });
 
 router.get("/room/:id/info", async (req, res) => {
-  res.json({
-    "room": {
-        "status": "created",
-        "id": "xxxx"
-    },
-    "players": [
-        {
-            "name": "hoge",
-            "uuid": "xxxx",
-            "rate": 1000
-        }
-    ],
-    "history": [
-        {
-            "wordle": [
-                {
-                    "char": "ぽ",
-                    "status": "miss"
-                },
-                {
-                    "char": "あ",
-                    "status": "miss"
-                },
-                {
-                    "char": "い",
-                    "status": "match" 
-                },
-                {
-                    "char": "う",
-                    "status": "include"
-                },
-                {
-                    "char": "え",
-                    "status": "miss"
-                }
-            ]
-        }
-    ],
-    "turnPlayerUuid": "uuid"
-  })
+  const roomId = req.params?.id;
+  if (!roomId) return res.status(403).send("room idが指定されてないよ");
+
+  const room = await dataController.getRoom(roomId);
+  if (!room) return res.status(403).send("roomが存在しないよ");
+
+  return res.json(room);
 })
 
 router.post("/room/:id/answer", async (req, res) => {
+  const roomId = req.params?.id;
+  if (!roomId) return res.status(403).send("room idが指定されてないよ");
+
+  const room = await dataController.getRoom(roomId);
+  if (!room) return res.status(403).send("roomが存在しないよ");
+
+  const uuid = req.body?.playerUuid;
+  const answer = req.body?.answer as string;
+
+  // TODO: answerの各単語をチェックする
+
+  const newRoomData = {
+    ...room,
+    history: [
+      ...room.history,
+      {
+        wordle: [
+          {
+            char: answer[0],
+            status: "miss",
+          },
+          {
+            char: answer[1],
+            status: "miss",
+          },
+          {
+            char: answer[2],
+            status: "miss",
+          },
+          {
+            char: answer[3],
+            status: "miss",
+          },
+          {
+            char: answer[4],
+            status: "miss",
+          },
+        ]
+      }
+    ],
+    turnPlayerUuid: uuid,
+  }
+
+  await dataController.updateRoom(roomId, newRoomData);
+
   res.json({
     "status": "accept",
     "message": "あたりー"
