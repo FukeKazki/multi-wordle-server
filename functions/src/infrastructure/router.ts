@@ -2,17 +2,19 @@ import express from "express";
 import * as admin from "firebase-admin";
 import {v4 as uuidv4} from "uuid";
 import { DataController } from "../interfaces/controllers/DataContoller";
+import { WordleController } from "../interfaces/controllers/WordleController";
 
 export const router = express.Router();
 
 const firebase = admin.initializeApp();
 const dataController = new DataController(firebase);
+const wordleController = new WordleController();
 
 router.get("/", async (req, res) => {
   res.send("hello world");
 });
 
-router.post("/user/register", async (req, res) => {
+router.post("/users/register", async (req, res) => {
   const name = req.body?.name;
   if (!name) return res.status(403).send("nameがないよ");
   
@@ -49,6 +51,8 @@ router.get("/room", async (req, res) => {
   // 未マッチのルームがない場合はルーム作成・ある場合はルームに接続
   if (queueRooms.length === 0) {
     // TODO: 答えを決める
+    const word = wordleController.generateWordle();
+
     const roomId = uuidv4();
     const roomData = {
       room: {
@@ -64,6 +68,7 @@ router.get("/room", async (req, res) => {
       ],
       history: [],
       turnPlayerUuid: userId,
+      word: word,
     }
     // ルームを作成
     await dataController.createRoom(roomId, roomData);
@@ -118,34 +123,14 @@ router.post("/room/:id/answer", async (req, res) => {
   const answer = req.body?.answer as string;
 
   // TODO: answerの各単語をチェックする
+  const wordle = wordleController.compareWordle(room.word, answer);
 
   const newRoomData = {
     ...room,
     history: [
       ...room.history,
       {
-        wordle: [
-          {
-            char: answer[0],
-            status: "miss",
-          },
-          {
-            char: answer[1],
-            status: "miss",
-          },
-          {
-            char: answer[2],
-            status: "miss",
-          },
-          {
-            char: answer[3],
-            status: "miss",
-          },
-          {
-            char: answer[4],
-            status: "miss",
-          },
-        ]
+        wordle: wordle,
       }
     ],
     turnPlayerUuid: uuid,
