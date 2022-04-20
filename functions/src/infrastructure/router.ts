@@ -14,45 +14,80 @@ router.get("/", async (req, res) => {
 
 router.post("/user/register", async (req, res) => {
   const name = req.body?.name;
-  if (!name) return res.status(403);
+  if (!name) return res.status(403).send("nameがないよ");
   
   const id = uuidv4();
-  
+
   try {
     await dataController.registerUser(id, {
       name: name,
       uuid: id,
+      rate: 0,
     });
   } catch (e) {
     console.error(e);
-    return res.status(500);
+    return res.status(500).send("ユーザー登録で事故りました");
   }
   
   return res.json({
     name: name,
-    uuid: id
+    uuid: id,
+    rate: 0,
   });
 })
 
 router.get("/room", async (req, res) => {
-  res.json({
-    "room": {
-        "status": "created",
-        "id": "xxxx"
-    },
-    "players": [
+  const userId = req.body?.id;
+  if (!userId) return res.status(403).send("idがないよ");
+
+  // ユーザーの検索
+  const user = await dataController.searchUser(userId);
+  if(!user) return res.status(403).send("ユーザーが見つかりませんでした");
+
+  // 未マッチのルームを検索
+  const queueRooms = await dataController.getQueueRooms();
+  // 未マッチのルームがない場合はルーム作成・ある場合はルームに接続
+  if (queueRooms.length === 0) {
+    const roomId = uuidv4();
+    const roomData = {
+      room: {
+        status: "created",
+        id: roomId
+      },
+      players: [
         {
-            "name": "hoge",
-            "uuid": "xxxx",
-            "rate": 1000
-        },
-        {
-            "name": "fuga",
-            "uuid": "xxxx",
-            "rate": 1000
+          name: user?.name,
+          uuid: userId,
+          rate: user?.rate,
         }
-    ]
-  })
+      ]
+    }
+    // ルームを作成
+    await dataController.createRoom(roomId, roomData);
+    return res.json(roomData);
+  } else {
+    const room = queueRooms[0];
+    const newRoomData = {
+      room: {
+        ...room.room,
+        status: "matched",
+      },
+      players: [
+        ...room.players,
+        {
+          name: user?.name,
+          uuid: userId,
+          rate: user?.rate,
+        }
+      ]
+    }
+    
+    // ルームに接続
+    await dataController.connectRoom(room?.room?.id as string, newRoomData);
+    // キューから削除
+    await dataController.deleteQueueRoom(room?.room?.id as string);
+    return res.json(newRoomData);
+  }
 });
 
 router.get("/room/:id/info", async (req, res) => {
