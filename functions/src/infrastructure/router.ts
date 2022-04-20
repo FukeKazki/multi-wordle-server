@@ -38,7 +38,7 @@ router.post("/users/register", async (req, res) => {
   });
 })
 
-router.get("/room", async (req, res) => {
+router.post("/room", async (req, res) => {
   const userId = req.body?.id;
   if (!userId) return res.status(403).send("idがないよ");
 
