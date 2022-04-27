@@ -1,6 +1,6 @@
 import express from "express";
 import * as admin from "firebase-admin";
-import {v4 as uuidv4} from "uuid";
+import { v4 as uuidv4 } from "uuid";
 import { DataController } from "../interfaces/controllers/DataContoller";
 import { WordleController } from "../interfaces/controllers/WordleController";
 
@@ -17,26 +17,26 @@ router.get("/", async (req, res) => {
 router.post("/users/register", async (req, res) => {
   const name = req.body?.name;
   if (!name) return res.status(403).send("nameがないよ");
-  
+
   const id = uuidv4();
 
   try {
     await dataController.registerUser(id, {
       name: name,
       uuid: id,
-      rate: 0,
+      rate: 0
     });
   } catch (e) {
     console.error(e);
     return res.status(500).send("ユーザー登録で事故りました");
   }
-  
+
   return res.json({
     name: name,
     uuid: id,
-    rate: 0,
+    rate: 0
   });
-})
+});
 
 router.post("/room", async (req, res) => {
   const userId = req.body?.id;
@@ -44,7 +44,7 @@ router.post("/room", async (req, res) => {
 
   // ユーザーの検索
   const user = await dataController.searchUser(userId);
-  if(!user) return res.status(403).send("ユーザーが見つかりませんでした");
+  if (!user) return res.status(403).send("ユーザーが見つかりませんでした");
 
   // 未マッチのルームを検索
   const queueRooms = await dataController.getQueueRooms();
@@ -63,13 +63,13 @@ router.post("/room", async (req, res) => {
         {
           name: user?.name,
           uuid: userId,
-          rate: user?.rate,
+          rate: user?.rate
         }
       ],
       history: [],
       turnPlayerUuid: userId,
-      word: word,
-    }
+      word: word
+    };
     // ルームを作成
     await dataController.createRoom(roomId, roomData);
     return res.json(roomData);
@@ -79,21 +79,19 @@ router.post("/room", async (req, res) => {
       ...room,
       room: {
         ...room.room,
-        status: "matched",
+        status: "matched"
       },
       players: [
         ...room.players,
         {
           name: user?.name,
           uuid: userId,
-          rate: user?.rate,
+          rate: user?.rate
         }
       ],
-      history: [
-        ...room.history
-      ]
-    }
-    
+      history: [...room.history]
+    };
+
     // ルームに接続
     await dataController.connectRoom(room?.room?.id as string, newRoomData);
     // キューから削除
@@ -110,7 +108,7 @@ router.get("/room/:id/info", async (req, res) => {
   if (!room) return res.status(403).send("roomが存在しないよ");
 
   return res.json(room);
-})
+});
 
 router.post("/room/:id/answer", async (req, res) => {
   const roomId = req.params?.id;
@@ -130,16 +128,16 @@ router.post("/room/:id/answer", async (req, res) => {
     history: [
       ...room.history,
       {
-        wordle: wordle,
+        wordle: wordle
       }
     ],
-    turnPlayerUuid: uuid,
-  }
+    turnPlayerUuid: uuid
+  };
 
   await dataController.updateRoom(roomId, newRoomData);
 
   res.json({
-    "status": "accept",
-    "message": "あたりー"
-  })
-})
+    status: "accept",
+    message: "あたりー"
+  });
+});

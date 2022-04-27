@@ -8,6 +8,4 @@ const app = express();
 app.use(cors());
 app.use(router);
 
-export const wordle = functions
-  .region("asia-northeast1")
-  .https.onRequest(app);
+export const wordle = functions.region("asia-northeast1").https.onRequest(app);
