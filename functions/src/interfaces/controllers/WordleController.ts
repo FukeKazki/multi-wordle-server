@@ -1,7 +1,15 @@
+import words from "../../config/words.json";
+
+const getRandomInt = (max: number) => {
+    return Math.floor(Math.random() * max);
+}
+
 export class WordleController {
-  generateWordle() {
-    return "さつまいも";
-  }
+    generateWordle() {
+        const random = getRandomInt(words.words.length)
+
+        return words.words[random]
+    }
 
   compareWordle(collectWord: string, answer: string) {
     const wordLength = collectWord.length;
