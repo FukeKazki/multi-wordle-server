@@ -1,5 +1,5 @@
 import express from "express";
-import { router } from "./infrastructure/router";
+import { router } from "./infrastructor/router";
 import * as functions from "firebase-functions";
 import cors from "cors";
 
